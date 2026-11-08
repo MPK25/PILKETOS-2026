@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <title>
+   Admin Pilketos
+  </title>
+  <link href="style.css" rel="stylesheet"/>
+ </head>
+ <body>
+  <aside class="sidebar">
+   <div class="brand">
+    <img alt="Logo sekolah" class="school-logo" onerror="this.style.display='none'" src="assets/logo-sekolah.png"/>
+    <div>
+     <b>
+      PILKETOS
+     </b>
+     <small>
+      ADMIN CONSOLE
+     </small>
+    </div>
+   </div>
+   <nav hidden="" id="nav">
+    <button class="active" data-page="overview">
+     ▦ Ringkasan
+    </button>
+    <button data-page="voters">
+     ♙ Data Pemilih
+    </button>
+    <button data-page="candidates">
+     ♧ Pasangan Calon
+    </button>
+    <button data-page="results">
+     ▤ Hasil Suara
+    </button>
+    <button data-page="settings">
+     ⚙ Pengaturan
+    </button>
+   </nav>
+   <div class="side-foot">
+    SMK NEGERI 1 JAMBLANG
+    <br/>
+    <span>
+     Restricted access
+    </span>
+   </div>
+  </aside>
+  <main class="main">
+   <section class="login-card" id="login">
+    <div class="eyebrow">
+     AKSES TERBATAS
+    </div>
+    <h1>
+     Admin
+     <br/>
+     <span>
+      Dashboard.
+     </span>
+    </h1>
+    <p class="muted">
+     Masuk menggunakan akun administrator yang telah dibuat di Supabase.
+    </p>
+    <form id="loginForm">
+     <label>
+      Email admin
+      <input id="email" required="" type="email"/>
+     </label>
+     <label>
+      Kata sandi
+      <input id="password" required="" type="password"/>
+     </label>
+     <button class="primary">
+      Masuk dashboard &rarr;
+     </button>
+     <p class="message" id="loginMsg">
+     </p>
+    </form>
+   </section>
+   <section hidden="" id="app">
+    <header class="page-head">
+     <div>
+      <div class="eyebrow">
+       CONTROL CENTER
+      </div>
+      <h1 id="pageTitle">
+       Ringkasan
+      </h1>
+     </div>
+     <button class="ghost" id="logout">
+      Keluar &nearrow;
+     </button>
+    </header>
+    <div id="content">
+    </div>
+   </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+  </script>
+  <script src="app.js">
+  </script>
+ </body>
+</html>
+

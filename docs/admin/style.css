@@ -1,0 +1,341 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap');
+:root {
+    --bg:#071321;
+    --panel:#102439;
+    --line:#203b51;
+    --cyan:#54d7e9;
+    --lime:#c6f36b;
+    --text:#f2f7fa;
+    --muted:#9bb0c0;
+}
+* {
+    box-sizing:border-box;
+}
+body {
+    margin:0;
+    background:radial-gradient(ellipse at 85% 0%,#13364c 0,transparent 38%),var(--bg);
+    color:var(--text);
+    font-family:'Plus Jakarta Sans',sans-serif;
+    min-height:100vh;
+}
+.sidebar {
+    position:fixed;
+    inset:0 auto 0 0;
+    width:245px;
+    padding:27px 18px;
+    background:#091827;
+    border-right:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+}
+.brand {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    padding:0 8px 30px;
+}
+.mark {
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    background:linear-gradient(135deg,var(--cyan),var(--lime));
+    color:#071321;
+    display:grid;
+    place-items:center;
+    font:800 15px Syne;
+}
+.brand b,.brand small {
+    display:block;
+}
+.brand b {
+    font:800 14px Syne;
+    letter-spacing:1px;
+}
+.brand small {
+    font-size:10px;
+    color:var(--muted);
+    margin-top:4px;
+    letter-spacing:1.5px;
+}
+nav {
+    display:grid;
+    gap:7px;
+}
+nav button {
+    background:transparent;
+    color:#9eb4c5;
+    text-align:left;
+    border:1px solid transparent;
+    padding:13px 14px;
+    border-radius:10px;
+    font-weight:600;
+}
+nav button.active,nav button:hover {
+    background:#142c41;
+    color:var(--cyan);
+    border-color:#294a60;
+}
+.side-foot {
+    margin-top:auto;
+    color:#a5b8c6;
+    font-size:10px;
+    line-height:1.9;
+    letter-spacing:1px;
+}
+.side-foot span {
+    color:#617c90;
+}
+.main {
+    margin-left:245px;
+    padding:44px clamp(22px,5vw,65px);
+    max-width:1500px;
+}
+.login-card {
+    max-width:470px;
+    margin:8vh auto;
+    padding:42px;
+    background:linear-gradient(145deg,#10263a,#0b1b2b);
+    border:1px solid var(--line);
+    border-radius:22px;
+}
+.eyebrow {
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:2px;
+    color:var(--cyan);
+}
+h1 {
+    font:800 clamp(32px,4vw,46px)/1.1 Syne;
+    margin:13px 0;
+}
+h1 span {
+    color:var(--cyan);
+}
+h2 {
+    font:700 21px Syne;
+    margin:0 0 15px;
+}
+.muted {
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.7;
+}
+label {
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    margin:16px 0;
+    color:#d5e2e9;
+}
+input,select,textarea {
+    display:block;
+    width:100%;
+    padding:12px 13px;
+    margin-top:8px;
+    background:#071625;
+    border:1px solid #2a455a;
+    border-radius:9px;
+    color:white;
+    font:inherit;
+    outline:none;
+}
+textarea {
+    min-height:95px;
+    resize:vertical;
+}
+button {
+    cursor:pointer;
+    font:700 12px 'Plus Jakarta Sans';
+    border:0;
+    border-radius:9px;
+    padding:12px 15px;
+}
+button:disabled {
+    opacity:.5;
+    cursor:not-allowed;
+}
+.primary {
+    background:linear-gradient(100deg,var(--cyan),#a8e8c6);
+    color:#071522;
+}
+.ghost {
+    background:#1b344a;
+    color:#e0edf5;
+    border:1px solid #31516a;
+}
+.login-card .primary {
+    width:100%;
+    margin-top:10px;
+}
+.message {
+    color:#ffb7a8;
+    font-size:12px;
+    min-height:18px;
+}
+.page-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:30px;
+}
+.page-head h1 {
+    font-size:36px;
+}
+.stats {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+    margin-bottom:24px;
+}
+.stat,.card {
+    background:linear-gradient(145deg,#10263a,#0b1b2b);
+    border:1px solid var(--line);
+    border-radius:15px;
+    padding:21px;
+}
+.stat span {
+    color:var(--muted);
+    font-size:11px;
+}
+.stat strong {
+    display:block;
+    font:800 30px Syne;
+    margin-top:8px;
+}
+.card {
+    margin-bottom:18px;
+}
+.card-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:15px;
+}
+.form-grid {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:0 15px;
+}
+.form-grid .full {
+    grid-column:1/-1;
+}
+.actions {
+    display:flex;
+    gap:9px;
+    flex-wrap:wrap;
+    margin-top:12px;
+}
+.table-wrap {
+    overflow:auto;
+}
+table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    min-width:650px;
+}
+th,td {
+    text-align:left;
+    padding:12px;
+    border-bottom:1px solid #20384d;
+}
+th {
+    color:#8fa8ba;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+td {
+    color:#dce8ef;
+}
+.pill {
+    padding:5px 8px;
+    border-radius:20px;
+    background:#173c43;
+    color:#a8f0d4;
+    font-size:10px;
+}
+.pill.off {
+    background:#493520;
+    color:#ffdb9c;
+}
+.candidate-row {
+    display:grid;
+    grid-template-columns:90px 1fr auto;
+    gap:15px;
+    align-items:center;
+    padding:13px 0;
+    border-bottom:1px solid var(--line);
+}
+.candidate-row img {
+    width:90px;
+    height:70px;
+    object-fit:cover;
+    border-radius:9px;
+    background:#1c3548;
+}
+.candidate-row p {
+    font-size:11px;
+    color:var(--muted);
+}
+.bar {
+    height:8px;
+    background:#20384d;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:7px;
+}
+.bar i {
+    display:block;
+    height:100%;
+    background:linear-gradient(90deg,var(--cyan),var(--lime));
+}
+.hint {
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.7;
+}
+.danger {
+    background:#542c32;
+    color:#ffd4d4;
+}
+@media(max-width:850px) {
+    .sidebar {
+        position:static;
+        width:auto;
+        padding:14px;
+    }
+    .brand {
+        padding-bottom:12px;
+    }
+    nav {
+        display:flex;
+        overflow:auto;
+    }
+    nav button {
+        white-space:nowrap;
+    }
+    .side-foot {
+        display:none;
+    }
+    .main {
+        margin:0;
+        padding:25px 16px;
+    }
+    .stats {
+        grid-template-columns:1fr;
+    }
+    .form-grid {
+        grid-template-columns:1fr;
+    }
+    .form-grid .full {
+        grid-column:auto;
+    }
+}
+.school-logo {
+    width:40px;
+    height:40px;
+    object-fit:contain;
+    border-radius:10px;
+}
