@@ -30,37 +30,272 @@ async function voters() { const { data, error } = await db.from('voters').select
     return;
 } votersCache = data || []; page('Data Pemilih', `<div class="card"><div class="card-head"><h2>Tambah pemilih manual</h2></div><form id="addVoter"><div class="form-grid"><label>NIS / NIP<input name="identifier" required></label><label>Nama lengkap<input name="full_name" required></label><label>Status<select name="voter_type"><option value="murid">Murid</option><option value="guru">Guru</option></select></label><label>Jenis kelamin<select name="gender"><option value="">—</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></label><label>Jurusan<select name="major"><option value="">—</option>${['LP', 'TKR', 'TOI', 'TSM', 'TKJ', 'DPIB'].map(x => `<option>${x}</option>`).join('')}</select></label><label>Kelas<select name="grade"><option value="">—</option>${['X', 'XI', 'XII'].map(x => `<option>${x}</option>`).join('')}</select></label></div><button class="primary">Simpan pemilih</button><p id="addMsg" class="message"></p></form></div><div class="card"><div class="card-head"><h2>Impor CSV</h2><span class="hint">Password awal otomatis NIS/NIP</span></div><input id="csvFile" type="file" accept=".csv,text/csv"><div class="actions"><button id="importCsv" class="primary">Impor data CSV</button><button id="sampleCsv" class="ghost">Unduh contoh CSV</button></div><p class="hint">Header: identifier,full_name,gender,major,grade,status. Status isi murid atau guru.</p><p id="csvMsg" class="message"></p></div><div class="card"><div class="card-head"><h2>Daftar pemilih (${data?.length || 0})</h2><input id="searchVoter" placeholder="Cari nama / NIS / kelas" style="max-width:260px;margin:0"></div><div class="table-wrap"><table><thead><tr><th>NIS/NIP</th><th>Nama</th><th>Status</th><th>Kelas</th><th>Jurusan</th><th>Hak suara</th></tr></thead><tbody id="voterRows">${voterRows(data || [])}</tbody></table></div></div>`); $('addVoter').onsubmit = addVoter; $('searchVoter').oninput = () => { $('voterRows').innerHTML = voterRows(votersCache.filter(v => [v.identifier, v.full_name, v.grade, v.major].join(' ').toLowerCase().includes($('searchVoter').value.toLowerCase()))); }; $('importCsv').onclick = importCsv; $('sampleCsv').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['identifier,full_name,gender,major,grade,status\n123456,ANDI,L,TKJ,X,murid\n1987654321,BUDI,,,,guru\n'], { type: 'text/csv' })); a.download = 'contoh-pemilih.csv'; a.click(); }; }
 function voterRows(rows) { return rows.map(v => `<tr><td>${esc(v.identifier)}</td><td>${esc(v.full_name)}</td><td>${esc(v.voter_type)}</td><td>${esc(v.grade || '—')}</td><td>${esc(v.major || '—')}</td><td><span class="pill ${v.has_voted ? '' : 'off'}">${v.has_voted ? 'Sudah memilih' : 'Belum memilih'}</span></td></tr>`).join(''); }
-async function callProvision(rows) { const { data: { session } } = await db.auth.getSession(); const res = await fetch(`${SUPABASE_URL}/functions/v1/provision-voters`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}`, 'apikey': SUPABASE_ANON_KEY }, body: JSON.stringify({ voters: rows }) }); const out = await res.json(); if (!res.ok)
-    throw new Error(out.error || 'Gagal menyimpan data'); return out; }
-async function addVoter(e) { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); f.full_name = f.full_name.trim().toUpperCase(); if (f.voter_type === 'guru') {
-    f.major = null;
-    f.grade = null;
-    f.gender = null;
-} try {
-    say('addMsg', 'Menyimpan...');
-    const r = await callProvision([f]);
-    say('addMsg', r.message || 'Data berhasil disimpan.');
-    await voters();
+
+async function callProvision(rows) {
+    const { data, error: sessionError } = await db.auth.getSession();
+    const session = data?.session;
+
+    if (sessionError || !session?.access_token) {
+        throw new Error('Sesi admin tidak ditemukan. Silakan login ulang.');
+    }
+
+    const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/provision-voters`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ voters: rows })
+        }
+    );
+
+    let out;
+
+    try {
+        out = await res.json();
+    } catch {
+        throw new Error(`Respons server tidak valid (HTTP ${res.status}).`);
+    }
+
+    if (!res.ok) {
+        throw new Error(
+            out.error ||
+            out.message ||
+            `Gagal menyimpan data (HTTP ${res.status}).`
+        );
+    }
+
+    if (
+        !out ||
+        !Number.isInteger(out.success) ||
+        !Array.isArray(out.errors) ||
+        out.success < 0 ||
+        out.success + out.errors.length !== rows.length
+    ) {
+        throw new Error(
+            'Format hasil server tidak sesuai. Periksa Edge Function.'
+        );
+    }
+
+    return out;
 }
-catch (err) {
-    say('addMsg', err.message);
-} }
-async function importCsv() { const file = $('csvFile').files[0]; if (!file) {
-    say('csvMsg', 'Pilih file CSV terlebih dahulu.');
-    return;
-} try {
-    const text = await file.text();
-    const lines = text.replace(/^\uFEFF/, '').trim().split(/\r?\n/);
-    const headers = lines.shift().split(',').map(x => x.trim().toLowerCase());
-    const rows = lines.filter(Boolean).map(line => { const cols = line.split(',').map(x => x.trim()); return Object.fromEntries(headers.map((h, i) => [h, cols[i] || ''])); });
-    say('csvMsg', `Mengimpor ${rows.length} data...`);
-    const r = await callProvision(rows);
-    say('csvMsg', r.message || 'Impor selesai.');
-    await voters();
+
+async function addVoter(e) {
+    e.preventDefault();
+
+    const f = Object.fromEntries(new FormData(e.target));
+
+    f.identifier = String(f.identifier || '').trim().toUpperCase();
+    f.full_name = String(f.full_name || '').trim().toUpperCase();
+
+    if (f.voter_type === 'guru') {
+        f.major = null;
+        f.grade = null;
+        f.gender = null;
+    }
+
+    try {
+        say('addMsg', 'Menyimpan data pemilih...');
+
+        const r = await callProvision([f]);
+
+        if (r.success !== 1 || r.errors.length > 0) {
+            throw new Error(
+                r.errors.join('\n') || 'Data pemilih tidak berhasil disimpan.'
+            );
+        }
+
+        e.target.reset();
+        say('addMsg', r.message || 'Pemilih berhasil disimpan.');
+
+        await voters();
+
+    } catch (err) {
+        say('addMsg', err.message || 'Terjadi kesalahan saat menyimpan.');
+    }
 }
-catch (err) {
-    say('csvMsg', err.message);
-} }
+
+
+async function importCsv() {
+    const file = $('csvFile').files[0];
+
+    if (!file) {
+        say('csvMsg', 'Pilih file CSV terlebih dahulu.');
+        return;
+    }
+
+    const parseCSV = (input) => {
+        const rows = [];
+        let row = [];
+        let cell = '';
+        let quoted = false;
+
+        for (let i = 0; i < input.length; i++) {
+            const char = input[i];
+            const next = input[i + 1];
+
+            if (quoted) {
+                if (char === '"' && next === '"') {
+                    cell += '"';
+                    i++;
+                } else if (char === '"') {
+                    quoted = false;
+                } else {
+                    cell += char;
+                }
+                continue;
+            }
+
+            if (char === '"' && cell.length === 0) {
+                quoted = true;
+            } else if (char === ',') {
+                row.push(cell.trim());
+                cell = '';
+            } else if (char === '\n' || char === '\r') {
+                row.push(cell.trim());
+                cell = '';
+
+                if (row.some(value => value !== '')) {
+                    rows.push(row);
+                }
+
+                row = [];
+
+                if (char === '\r' && next === '\n') {
+                    i++;
+                }
+            } else {
+                cell += char;
+            }
+        }
+
+        if (quoted) {
+            throw new Error('CSV tidak valid: ada tanda kutip yang belum ditutup.');
+        }
+
+        row.push(cell.trim());
+
+        if (row.some(value => value !== '')) {
+            rows.push(row);
+        }
+
+        if (rows.length < 2) {
+            throw new Error('CSV tidak memiliki data pemilih.');
+        }
+
+        const headers = rows.shift().map(value => value.toLowerCase());
+
+        if (new Set(headers).size !== headers.length) {
+            throw new Error('CSV memiliki nama kolom yang duplikat.');
+        }
+
+        const required = [
+            'identifier',
+            'full_name',
+            'gender',
+            'major',
+            'grade',
+            'status'
+        ];
+
+        const missing = required.filter(header => !headers.includes(header));
+
+        if (missing.length) {
+            throw new Error(
+                `Kolom CSV tidak ditemukan: ${missing.join(', ')}`
+            );
+        }
+
+        return rows.map((values, index) => {
+            const item = {};
+
+            headers.forEach((header, i) => {
+                item[header] = String(values[i] ?? '').trim();
+            });
+
+            item.identifier = item.identifier.toUpperCase();
+            item.full_name = item.full_name.toUpperCase();
+            item.status = item.status.toLowerCase();
+
+            return item;
+        });
+    };
+
+    let successTotal = 0;
+    let errorTotal = 0;
+    const errorDetails = [];
+    const batchSize = 25;
+
+    try {
+        say('csvMsg', 'Membaca dan memeriksa file CSV...');
+
+        const raw = (await file.text()).replace(/^\uFEFF/, '');
+        const rows = parseCSV(raw);
+
+        if (!rows.length) {
+            throw new Error('Tidak ada baris data untuk diimpor.');
+        }
+
+        say(
+            'csvMsg',
+            `Ditemukan ${rows.length} data. Memulai impor bertahap...`
+        );
+
+        const totalBatches = Math.ceil(rows.length / batchSize);
+
+        for (let start = 0; start < rows.length; start += batchSize) {
+            const batch = rows.slice(start, start + batchSize);
+            const batchNumber = Math.floor(start / batchSize) + 1;
+
+            say(
+                'csvMsg',
+                `Memproses batch ${batchNumber}/${totalBatches} · ` +
+                `${Math.min(start + batch.length, rows.length)}/${rows.length} data...`
+            );
+
+            const result = await callProvision(batch);
+
+            successTotal += result.success;
+            errorTotal += result.errors.length;
+
+            result.errors.forEach(message => {
+                errorDetails.push(`Batch ${batchNumber}: ${message}`);
+            });
+        }
+
+        let message =
+            `Impor selesai. Berhasil: ${successTotal}. Gagal: ${errorTotal}.`;
+
+        if (errorDetails.length) {
+            message += '\n\nDetail kesalahan:\n' +
+                errorDetails.slice(0, 10).join('\n');
+
+            if (errorDetails.length > 10) {
+                message += `\nDan ${errorDetails.length - 10} kesalahan lainnya.`;
+            }
+        }
+
+       await voters();
+say('csvMsg', message);
+
+    } catch (err) {
+        await voters();
+
+say(
+    'csvMsg',
+    `Impor dihentikan.\n` +
+    `Berhasil sebelum berhenti: ${successTotal}.\n` +
+    `Gagal tercatat: ${errorTotal}.\n` +
+    `${err.message}`
+);
+
+        // Muat ulang daftar agar perubahan batch sebelumnya terlihat.
+        await voters();
+    }
+}
 async function candidates() { const { data, error } = await db.from('candidates').select('*').order('number'); page('Pasangan Calon', `<div class="card"><h2>Tambah / perbarui pasangan calon</h2><form id="candidateForm"><div class="form-grid"><label>Nomor paslon<select name="number" required><option value="1">Paslon 1</option><option value="2">Paslon 2</option><option value="3">Paslon 3</option></select></label><label>Nama pasangan<input name="name" required placeholder="Contoh: Sifa & Ahmad"></label><label class="full">Nama lengkap dan kelas<input name="members" required placeholder="Nama 1 (kelas) · Nama 2 (kelas)"></label><label class="full">Path foto / URL foto<input name="photo_url" placeholder="assets/paslon-1.jpg"></label><label class="full">Visi<textarea name="vision" required></textarea></label><label class="full">Misi<textarea name="mission" required placeholder="Tuliskan poin-poin misi"></textarea></label></div><button class="primary">Simpan pasangan calon</button><p id="candidateMsg" class="message"></p></form></div><div class="card"><h2>Daftar pasangan calon</h2><div id="candidateList">${(data || []).map(c => `<div class="candidate-row"><img src="${esc(c.photo_url || '')}" onerror="this.style.visibility='hidden'"><div><b>Paslon ${c.number} · ${esc(c.name)}</b><p>${esc(c.members)}</p><span class="pill ${c.is_active ? '' : 'off'}">${c.is_active ? 'Aktif' : 'Nonaktif'}</span></div><button class="ghost editCandidate" data-id="${c.id}">Edit</button></div>`).join('') || '<p class="hint">Belum ada kandidat.</p>'}</div></div>`); $('candidateForm').onsubmit = saveCandidate; document.querySelectorAll('.editCandidate').forEach(b => b.onclick = () => { const c = data.find(x => x.id === b.dataset.id), f = $('candidateForm'); Object.entries(c).forEach(([k, v]) => { if (f.elements[k])
     f.elements[k].value = v ?? ''; }); f.dataset.id = c.id; window.scrollTo({ top: 0, behavior: 'smooth' }); }); }
 async function saveCandidate(e) {
