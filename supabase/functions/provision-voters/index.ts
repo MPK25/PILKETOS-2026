@@ -210,10 +210,17 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      if (gender && !['L', 'P'].includes(gender)) {
-        errors.push(`Baris ${i + 2}: jenis kelamin harus L atau P`);
-        continue;
-      }
+      if (
+  voter_type === 'murid' &&
+  !['L', 'P'].includes(gender ?? '')
+) {
+  errors.push(`Baris ${i + 2}: jenis kelamin murid wajib L atau P`);
+  continue;
+}
+
+if (voter_type === 'guru' && gender !== null) {
+  // Data jenis kelamin guru tidak wajib disimpan.
+}
 
       const email = `${normalizedIdentifier}@pemilih.smk.sch.id`;
 
@@ -300,18 +307,17 @@ Deno.serve(async (req) => {
       }
 
       const { error: vErr } = await caller.from('voters').upsert(
-        {
-          user_id: userId,
-          identifier,
-          full_name,
-          gender,
-          major,
-          grade,
-          voter_type,
-          is_active: true,
-        },
-        { onConflict: 'user_id' },
-      );
+  {
+    user_id: userId,
+    identifier,
+    full_name,
+    gender,
+    major,
+    grade,
+    voter_type,
+  },
+  { onConflict: 'user_id' },
+);
 
       if (vErr) {
         /*
